@@ -1,16 +1,18 @@
+CC_FLAGS=-c
 OBJS = writer.o
 TARGET = writer
 
 ifdef CROSS_COMPILE
-	CC = aarch64-none-linux-gnu-gcc
+	CC = $(CROSS_COMPILE)gcc
 else
 	CC = gcc
 endif
 
-all: $(TARGET)
-
 $(TARGET): $(OBJS)
-	$(CC) $(OBJS) -o $(TARGET)
+	$(CC) $(OBJS) -o $(TARGET) 
+
+$(OBJS) : writer.c
+	$(CC) $(CC_FLAGS) writer.c -o $(OBJS)
 
 clean:
 	rm -f *.o

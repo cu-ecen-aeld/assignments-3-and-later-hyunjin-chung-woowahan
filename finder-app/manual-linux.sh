@@ -12,6 +12,7 @@ BUSYBOX_VERSION=1_33_1
 FINDER_APP_DIR=$(realpath $(dirname $0))
 ARCH=arm64
 CROSS_COMPILE=aarch64-none-linux-gnu-
+FINDER_DIR=${OUTDIR}/assignments-3-and-later-hyunjin-chung-woowahan
 
 if [ $# -lt 1 ]
 then
@@ -93,25 +94,22 @@ sudo mknod -m 666 ${OUTDIR}/rootfs/dev/console c 5 1
 
 cd "$OUTDIR"
 # TODO: Clean and build the writer utility
-if [ ! -d "${OUTDIR}/assignments-3-and-later-hyunjin-chung-woowahan" ]
+if [ ! -d "${FINDER_DIR}" ]
 then
-    git clone git@github.com:cu-ecen-aeld/assignments-3-and-later-hyunjin-chung-woowahan.git
-    cd assignments-3-and-later-hyunjin-chung-woowahan/finder-app
-else
-    cd assignments-3-and-later-hyunjin-chung-woowahan/finder-app
+    git clone https://github.com/cu-ecen-aeld/assignments-3-and-later-hyunjin-chung-woowahan.git
 fi
-
+  
+cd ${FINDER_DIR}/finder-app
 make clean
 make CROSS_COMPILE=${CROSS_COMPILE}
 
 # TODO: Copy the finder related scripts and executables to the /home directory
 # on the target rootfs
-cp writer ${OUTDIR}/rootfs/home/
-cp finder.sh ${OUTDIR}/rootfs/home/
-cp finder-test.sh ${OUTDIR}/rootfs/home/
-cp autorun-qemu.sh ${OUTDIR}/rootfs/home/
-mkdir -p ${OUTDIR}/home/conf
-cp -r ../conf/ ${OUTDIR}/rootfs/home/conf/
+cd ${FINDER_DIR}/finder-app
+rm -rf conf
+cp -r ./  ${OUTDIR}/rootfs/home/
+cd ${FINDER_DIR}
+cp -r conf ${OUTDIR}/rootfs/home/
 
 # TODO: Chown the root directory
 sudo chown -R root:root ${OUTDIR}/rootfs

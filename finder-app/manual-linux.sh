@@ -19,6 +19,7 @@ then
 	echo "Using default directory ${OUTDIR} for output"
 else
 	OUTDIR=$1
+	FINDER_DIR=${OUTDIR}/assignments-3-and-later-hyunjin-chung-woowahan
 	echo "Using passed directory ${OUTDIR} for output"
 fi
 
@@ -98,7 +99,7 @@ if [ ! -d "${FINDER_DIR}" ]
 then
     git clone https://github.com/cu-ecen-aeld/assignments-3-and-later-hyunjin-chung-woowahan.git
 fi
-  
+
 cd ${FINDER_DIR}/finder-app
 make clean
 make CROSS_COMPILE=${CROSS_COMPILE}

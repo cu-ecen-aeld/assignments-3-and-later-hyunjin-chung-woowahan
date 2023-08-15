@@ -14,6 +14,8 @@ $(TARGET): $(OBJS)
 $(OBJS) : writer.c
 	$(CC) $(CC_FLAGS) writer.c -o $(OBJS)
 
+all: $(TARGET)
+
 clean:
 	rm -f *.o
 	rm -f $(TARGET)

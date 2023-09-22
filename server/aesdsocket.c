@@ -128,7 +128,7 @@ int main(int argc, char * argv[])
 	memset(&hints, 0, sizeof(struct addrinfo));
 	hints.ai_family = AF_INET;
 	hints.ai_socktype = SOCK_STREAM;
-	//hints.ai_flags = AI_PASSIVE;
+	hints.ai_flags = AI_PASSIVE;
 	
 	printf("start aesdsocket\n");
 
@@ -167,6 +167,7 @@ int main(int argc, char * argv[])
 	}
 	
 	syslog(LOG_INFO, "Accepted connection from %s\n", p_ip_addr);
+	printf("ip: %s\n", p_ip_addr);
 	
 	if (bind(sockfd, servinfo->ai_addr, servinfo->ai_addrlen) == -1)
 	{

@@ -27,7 +27,7 @@ static void signal_handler(int signal_number)
 		syslog(LOG_INFO, "Closed connection from %s\n", ipaddr);
 		shutdown(sockfd, SHUT_RDWR);
 		shutdown(sockfd_connected, SHUT_RDWR);
-		remove("/var/tmp/aesdsocketdata");
+		remove(FILE_PATH);
 		disconnect = true;
 	}
 }
@@ -38,7 +38,7 @@ static bool send_data(void)
 
 	if ((file = fopen(FILE_PATH, "r")) == NULL)
 	{
-		printf ("file open fail\n");
+		printf("file open fail\n");
 		return false;
 	}
 
@@ -129,12 +129,16 @@ int main(int argc, char * argv[])
 	hints.ai_family = AF_INET;
 	hints.ai_socktype = SOCK_STREAM;
 	//hints.ai_flags = AI_PASSIVE;
+	
+	printf("start aesdsocket\n");
 
 	if ((sockfd = socket(hints.ai_family, hints.ai_socktype, 0)) == -1)
 	{
 		perror("fail to create socket");
 		return -1;
 	}
+	
+	printf("create socket\n");
 	
 	struct addrinfo *servinfo;
 
@@ -144,6 +148,8 @@ int main(int argc, char * argv[])
 		perror("fail to set socket option");
 		return -1;
 	}
+	
+	printf("set socket\n");
 	
 	int getaddrinfo_err;
 	if ((getaddrinfo_err = getaddrinfo(NULL, "9000", &hints, &servinfo)))
@@ -159,7 +165,7 @@ int main(int argc, char * argv[])
 		perror("fail to convert ipv4 string");
 		return -1;
 	}
-		
+	
 	syslog(LOG_INFO, "Accepted connection from %s\n", p_ip_addr);
 	
 	if (bind(sockfd, servinfo->ai_addr, servinfo->ai_addrlen) == -1)
@@ -167,6 +173,8 @@ int main(int argc, char * argv[])
 		perror("fail to bind socket");
 		return -1;
 	}
+
+	printf("bind socket\n");
 	
 	freeaddrinfo(servinfo);
 
@@ -180,6 +188,8 @@ int main(int argc, char * argv[])
 			perror("fail to listen socket");
 			return -1;
 		}
+		
+		printf("listen\n");
 
 		struct sockaddr sockaddr_connected;
 		socklen_t sockaddrlen_connected = sizeof(struct sockaddr);

@@ -205,6 +205,8 @@ int main(int argc, char * argv[])
 				result = -1;
 				break;
 			}	
+			
+			printf("accept\n");
 
 			while(true)
 			{
@@ -222,6 +224,8 @@ int main(int argc, char * argv[])
 					//printf("finished\n");
 					break;
 				}
+			
+				printf("received\n");
 				
 				if (num_bytes_received > BUF_SIZE)
 				{

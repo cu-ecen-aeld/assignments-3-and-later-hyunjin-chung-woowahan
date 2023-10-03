@@ -6,12 +6,12 @@ SRCS = aesdsocket.c
 OBJS = $(SRCS:.c=.o)
 
 %.o: %.c
-	$(CC) $(CFLAGS) -c $< -o $@ $(INCLUDES)
+	$(CC) $(CFLAGS) -c $< -o $@ $(LDFLAGS)
 
 all: $(TARGET) 
 
 $(TARGET): $(OBJS)
-	$(CC) $^ -o $@ $(INCLUDES) $(LDFLAGS)
+	$(CC) $(CFLAGS) $^ -o $@ $(LDFLAGS)
 
 clean:
 	rm -f $(OBJS) $(TARGET)

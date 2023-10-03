@@ -9,7 +9,7 @@ else
 endif
 
 $(TARGET): $(OBJS)
-	$(CC) $(OBJS) -o $(TARGET) 
+	$(CC) $(OBJS) -o $(TARGET) -lpthread
 
 $(OBJS) : aesdsocket.c
 	$(CC) $(CC_FLAGS) aesdsocket.c -o $(OBJS)

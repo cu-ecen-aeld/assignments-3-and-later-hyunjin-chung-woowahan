@@ -1,21 +1,16 @@
-CC_FLAGS=-c -Wall -Werror
+CFLAGS ?= -c -g -Wall -Werror
+TARGET ?= aesdsocket
+LDFLAGS ?= -lpthread -lrt
+CC ?= $(CROSS_COMPILE)gcc
 OBJS = aesdsocket.o
-TARGET = aesdsocket
-
-ifdef CROSS_COMPILE
-	CC = $(CROSS_COMPILE)gcc
-else
-	CC = gcc
-endif
 
 $(TARGET): $(OBJS)
-	$(CC) $(OBJS) -o $(TARGET) -lpthread
+	$(CC) $^ -o $@ $(INCLUDES) $(LDFLAGS)
 
-$(OBJS) : aesdsocket.c
-	$(CC) $(CC_FLAGS) aesdsocket.c -o $(OBJS)
+.c.o :
+	$(CC) $(CFLAGS) $< -o $@ $(INCLUDES) $(LDFLAGS)
 
-all: $(TARGET)
+all: $(TARGET) 
 
 clean:
-	rm -f *.o
-	rm -f $(TARGET)
+	rm -f $(OBJS) $(TARGET)

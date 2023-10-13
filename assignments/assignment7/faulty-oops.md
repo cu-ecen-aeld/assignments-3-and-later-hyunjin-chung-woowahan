@@ -1,5 +1,5 @@
 # Details
-'''
+```
 Unable to handle kernel NULL pointer dereference at virtual address 0000000000000000
 Mem abort info:
   ESR = 0x96000045
@@ -42,8 +42,9 @@ Call trace:
  el0t_64_sync+0x1a0/0x1a4
 Code: d2800001 d2800000 d503233f d50323bf (b900003f) 
 ---[ end trace a5089934f96efd81 ]---
-'''
+```
 # objdump of faulty_write
+```
 isassembly of section .text:
 
 0000000000000000 <faulty_write>:
@@ -55,7 +56,6 @@ isassembly of section .text:
   14:	b900003f 	str	wzr, [x1]
   18:	d65f03c0 	ret
   1c:	d503201f 	nop
-
+```
 # Analysis
-str wzr [x1] means storing 32bit zero register to x1 address.
-in this case x1 address is 0. so "Unable to handle kernel NULL pointer dereference at virtual address 0000000000000000" error message is printed.
+str wzr [x1] means storing 32bit zero register to x1 address. In this case x1 address is 0. So "Unable to handle kernel NULL pointer dereference at virtual address 0000000000000000" error message is printed.

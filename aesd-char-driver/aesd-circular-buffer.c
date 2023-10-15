@@ -29,28 +29,28 @@
 struct aesd_buffer_entry *aesd_circular_buffer_find_entry_offset_for_fpos(struct aesd_circular_buffer *buffer,
             size_t char_offset, size_t *entry_offset_byte_rtn )
 {
-	struct aesd_buffer_entry *entry;
-	uint8_t cur_index = buffer->out_offs;
-	
-	do
-	{
-		entry = &buffer->entry[cur_index];
+    struct aesd_buffer_entry *entry;
+    uint8_t cur_index = buffer->out_offs;
 
-		if (char_offset < entry->size)
-		{
-			*entry_offset_byte_rtn = char_offset;
-			return entry;
-		}
-		else
-		{
-			char_offset -= entry->size;
-		}
+    do
+    {
+      entry = &buffer->entry[cur_index];
 
-		cur_index++;
-		if (cur_index == AESDCHAR_MAX_WRITE_OPERATIONS_SUPPORTED)
-			cur_index = 0;
+      if (char_offset < entry->size)
+      {
+        *entry_offset_byte_rtn = char_offset;
+        return entry;
+      }
+      else
+      {
+        char_offset -= entry->size;
+      }
 
-	} while (cur_index != buffer->in_offs);
+      cur_index++;
+      if (cur_index == AESDCHAR_MAX_WRITE_OPERATIONS_SUPPORTED)
+        cur_index = 0;
+
+    } while (cur_index != buffer->in_offs);
 
     return NULL;
 }
@@ -64,24 +64,24 @@ struct aesd_buffer_entry *aesd_circular_buffer_find_entry_offset_for_fpos(struct
 */
 void aesd_circular_buffer_add_entry(struct aesd_circular_buffer *buffer, const struct aesd_buffer_entry *add_entry)
 {
-	if (buffer->full)
-	{
-		buffer->out_offs++;
-		if (buffer->out_offs == AESDCHAR_MAX_WRITE_OPERATIONS_SUPPORTED)
-			buffer->out_offs = 0;
-	}
+    if (buffer->full)
+    {
+      buffer->out_offs++;
+      if (buffer->out_offs == AESDCHAR_MAX_WRITE_OPERATIONS_SUPPORTED)
+        buffer->out_offs = 0;
+    }
 
-	buffer->entry[buffer->in_offs].buffptr = add_entry->buffptr;
-	buffer->entry[buffer->in_offs].size = add_entry->size;
-	buffer->in_offs++;
-	if (buffer->in_offs == AESDCHAR_MAX_WRITE_OPERATIONS_SUPPORTED)
-		buffer->in_offs = 0;
+    buffer->entry[buffer->in_offs].buffptr = add_entry->buffptr;
+    buffer->entry[buffer->in_offs].size = add_entry->size;
+    buffer->in_offs++;
+    if (buffer->in_offs == AESDCHAR_MAX_WRITE_OPERATIONS_SUPPORTED)
+      buffer->in_offs = 0;
 
-	if (buffer->in_offs == buffer->out_offs)
-	{
-		buffer->full = true;
-	}
-}
+    if (buffer->in_offs == buffer->out_offs)
+    {
+      buffer->full = true;
+    }
+  }
 
 /**
 * Initializes the circular buffer described by @param buffer to an empty struct

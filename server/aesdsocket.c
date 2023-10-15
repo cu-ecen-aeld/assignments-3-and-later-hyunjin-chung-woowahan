@@ -17,7 +17,14 @@
 #include <unistd.h>
 
 #define BUF_SIZE (1024 * 1024)
-#define FILE_PATH ("/var/tmp/aesdsocketdata")
+
+#define USE_AESD_CHAR_DEVICE 1
+
+#if (USE_AESD_CHAR_DEVICE == 1)
+  #define FILE_PATH "/dev/aesdchar"
+#else
+  #define FILE_PATH "/var/tmp/aesdsocketdata"
+#endif
 
 typedef struct thread_info
 {
@@ -64,7 +71,7 @@ static bool send_data(int sockfd, char* buf)
 			return false;
 		}
 	}
-								
+
 	if (fclose(file) != 0)
 	{
 		printf("fail to close file");
@@ -77,7 +84,7 @@ static bool send_data(int sockfd, char* buf)
 static bool write_file(char* buf, int data_size)
 {
 	FILE* file;
-	
+
 	if ((file = fopen(FILE_PATH, "a+")) == NULL)
 	{
 		printf("fail to open write file\n");
@@ -128,12 +135,12 @@ static int init_socket(int *sockfd, char* ipaddr)
 		perror("fail to register SIGINT signal handler");
 		return -1;
 	}
-			
+
 	memset(&hints, 0, sizeof(struct addrinfo));
 	hints.ai_family = AF_INET;
 	hints.ai_socktype = SOCK_STREAM;
 	hints.ai_flags = AI_PASSIVE;
-	
+
 	//printf("start aesdsocket\n");
 
 	if ((*sockfd = socket(hints.ai_family, hints.ai_socktype, 0)) == -1)
@@ -141,9 +148,9 @@ static int init_socket(int *sockfd, char* ipaddr)
 		perror("fail to create socket");
 		return -1;
 	}
-	
+
 	//printf("create socket\n");
-	
+
 
 	int option = 1;
 	if (setsockopt(*sockfd, SOL_SOCKET, SO_REUSEADDR, &option, sizeof(int)) == -1)
@@ -151,9 +158,9 @@ static int init_socket(int *sockfd, char* ipaddr)
 		perror("fail to set socket option");
 		return -1;
 	}
-	
+
 	//printf("set socket\n");
-	
+
 	struct addrinfo *servinfo;
 	int getaddrinfo_err;
 	if ((getaddrinfo_err = getaddrinfo(NULL, "9000", &hints, &servinfo)))
@@ -170,10 +177,10 @@ static int init_socket(int *sockfd, char* ipaddr)
 		perror("fail to convert ipv4 string");
 		return -1;
 	}
-	
+
 	syslog(LOG_INFO, "Accepted connection from %s\n", p_ip_addr);
 	//printf("ip: %s\n", p_ip_addr);
-	
+
 	if (bind(*sockfd, servinfo->ai_addr, servinfo->ai_addrlen) == -1)
 	{
 		freeaddrinfo(servinfo);
@@ -182,15 +189,15 @@ static int init_socket(int *sockfd, char* ipaddr)
 	}
 
 	//printf("bind socket\n");
-	
+
 	freeaddrinfo(servinfo);
-		
+
 	if (listen(*sockfd, 2) == -1)
 	{
 		perror("fail to listen socket");
 		return -1;
 	}
-		
+
 	//printf("listen\n");
 
 	int flags;
@@ -211,6 +218,7 @@ static int init_socket(int *sockfd, char* ipaddr)
 	return 0;
 }
 
+#if (USE_AESD_CHAR_DEVICE == 0)
 static void write_timestamp(void)
 {
 	#define STRFTIME_MAX_SIZE (100)
@@ -222,7 +230,7 @@ static void write_timestamp(void)
 	{
 		pthread_mutex_lock(&mutex);
 		FILE* file;
-		
+
 		if ((file = fopen(FILE_PATH, "a+")) == NULL)
 		{
 			printf("fail to open write file\n");
@@ -249,7 +257,7 @@ static void write_timestamp(void)
 		pthread_mutex_unlock(&mutex);
 	}
 }
-
+#endif
 
 static void* receive_send_data(void* arg)
 {
@@ -270,7 +278,7 @@ static void* receive_send_data(void* arg)
 			//printf("finished\n");
 			break;
 		}
-	
+
 		//printf("received\n");
 
 		pthread_mutex_lock(&mutex);
@@ -303,7 +311,7 @@ int main(int argc, char * argv[])
 	int pid = 0;
 	int sockfd;
 	char ipaddr[INET_ADDRSTRLEN];
-	
+
 	if ((argc == 2) && (!strcmp(argv[1], "-d")))
 		daemon_mode = true;
 
@@ -311,7 +319,7 @@ int main(int argc, char * argv[])
 		return -1;
 
 	remove(FILE_PATH);
-	
+
 	if (daemon_mode)
 		pid = fork();
 
@@ -319,7 +327,7 @@ int main(int argc, char * argv[])
 	{
 		struct sockaddr sockaddr_connected;
 		socklen_t sockaddrlen_connected = sizeof(struct sockaddr);
-		
+
 		openlog (NULL, 0, LOG_USER);
 
 		SLIST_HEAD(slisthead, slist_thread) head;
@@ -331,7 +339,7 @@ int main(int argc, char * argv[])
 		{
 			slist_thread_t* p_slist_thread;
 			int sockfd_connected;
-			
+
 			if ((sockfd_connected = accept(sockfd, &sockaddr_connected, &sockaddrlen_connected)) == -1)
 			{
 				if ((errno != EAGAIN) && (errno != EWOULDBLOCK))
@@ -350,11 +358,11 @@ int main(int argc, char * argv[])
 				p_thread_info->buf = malloc(sizeof(char) * BUF_SIZE);
 				p_thread_info->is_success = true;
 				p_thread_info->is_complete = false;
-			
+
 				pthread_create(&p_slist_thread->thread, NULL, &receive_send_data, (void*)p_thread_info);
 
 				//printf("create thread\n");
-			
+
 				SLIST_INSERT_HEAD(&head, p_slist_thread, entries);
 			}
 
@@ -382,7 +390,9 @@ int main(int argc, char * argv[])
 				}
 			}
 
+#if (USE_AESD_CHAR_DEVICE == 0)
 			write_timestamp();
+#endif
 
 			if (disconnect)
 			{
@@ -397,7 +407,7 @@ int main(int argc, char * argv[])
 					shutdown(p_slist_thread->thread_info.sockfd, SHUT_RDWR);
 					free(p_slist_thread->thread_info.buf);
 					free(p_slist_thread);
-					
+
 					//printf("destroy thread\n");
 				}
 

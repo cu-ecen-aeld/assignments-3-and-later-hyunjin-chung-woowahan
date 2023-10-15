@@ -128,8 +128,8 @@ ssize_t aesd_write(struct file *filp, const char __user *buf, size_t count,
     aesd_device.cur_buf.size += count;
 
     if (ker_buf[count - 1] == '\n') {
-        if (aesd_device.circular_buf.entry[aesd_device.circular_buf.out_offs].buffptr)
-            kfree(aesd_device.circular_buf.entry[aesd_device.circular_buf.out_offs].buffptr);
+        if (aesd_device.circular_buf.entry[aesd_device.circular_buf.in_offs].buffptr)
+            kfree(aesd_device.circular_buf.entry[aesd_device.circular_buf.in_offs].buffptr);
         aesd_circular_buffer_add_entry(&aesd_device.circular_buf, &aesd_device.cur_buf);
         aesd_device.cur_buf.buffptr = NULL;
         aesd_device.cur_buf.size = 0;

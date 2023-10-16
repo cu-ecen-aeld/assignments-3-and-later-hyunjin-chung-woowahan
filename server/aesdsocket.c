@@ -53,15 +53,16 @@ static void signal_handler(int signal_number)
 	}
 }
 
-static bool send_data(int sockfd, char* buf)
+static bool send_data(FILE* file, int sockfd, char* buf)
 {
-	FILE* file;
-
-	if ((file = fopen(FILE_PATH, "r")) == NULL)
-	{
-		printf("file open fail\n");
-		return false;
-	}
+  if (!file)
+  {
+	  if ((file = fopen(FILE_PATH, "r")) == NULL)
+	  {
+		  printf("file open fail\n");
+		  return false;
+	  }
+  }
 
 	while(fgets(buf, BUF_SIZE, file) != NULL)
 	{
@@ -82,13 +83,22 @@ static bool send_data(int sockfd, char* buf)
 	return true;
 }
 
-static bool write_file(FILE* file, char* buf, int data_size)
+static bool write_file(char* buf, int data_size)
 {
+  FILE* file;
+
+  if ((file = fopen(FILE_PATH, "a+")) == NULL)
+  {
+      printf("fail to open write file\n");
+      return false;
+  }
+
 	for (int i = 0; i < data_size; i++)
 	{
 		if (buf[i] == '\n')
 		{
 			buf[i] = '\0';
+		  //printf("write string: %s\n", buf);
 
 			if (fprintf(file, "%s\n", buf) < 0)
 			{
@@ -100,11 +110,11 @@ static bool write_file(FILE* file, char* buf, int data_size)
 		}
 	}
 
-	if (fclose(file) != 0)
-	{
-		printf("fail to close file\n");
-		return false;
-	}
+  if (fclose(file) != 0)
+  {
+    printf("fail to close file\n");
+    return false;
+  }
 
 	return true;
 }
@@ -273,46 +283,51 @@ static void* receive_send_data(void* arg)
 			break;
 		}
 
-		//printf("received\n");
+    pthread_mutex_lock(&mutex);
+    FILE* file = NULL;
 
-    FILE* file;
-
-    if ((file = fopen(FILE_PATH, "a+")) == NULL)
-    {
-      printf("fail to open write file\n");
-      break;
-    }
-
-    if (0 == strncmp(p_thread_info->buf, aesdchar_ioctl_cmd, strlen(aesdchar_ioctl_cmd)))
+    if ((num_bytes_received >= strlen(aesdchar_ioctl_cmd)) && (0 == strncmp(p_thread_info->buf, aesdchar_ioctl_cmd,
+            strlen(aesdchar_ioctl_cmd))))
     {
       struct aesd_seekto seekto;
       char *tmp = strchr(p_thread_info->buf, ':');
       sscanf(tmp,":%u,%u", &(seekto.write_cmd), &(seekto.write_cmd_offset));
+
+      printf("ioctl write cmd: %u, offset: %u\n", seekto.write_cmd,
+          seekto.write_cmd_offset);
+
+      if ((file = fopen(FILE_PATH, "r")) == NULL)
+      {
+          pthread_mutex_unlock(&mutex);
+          printf("fail to open write file\n");
+          p_thread_info->is_success = false;
+          break;
+      }
 
       ioctl(fileno(file), AESDCHAR_IOCSEEKTO, &seekto);
     }
     else
     {
 
-      pthread_mutex_lock(&mutex);
-      if (write_file(file, p_thread_info->buf, num_bytes_received) == false)
+      if (write_file(p_thread_info->buf, num_bytes_received) == false)
       {
         pthread_mutex_unlock(&mutex);
         fprintf(stderr, "fail to write file");
+        printf("fail to write file\n");
         p_thread_info->is_success = false;
         break;
       }
-
-      if (send_data(p_thread_info->sockfd, p_thread_info->buf) == false)
-      {
-        pthread_mutex_unlock(&mutex);
-        fprintf(stderr, "fail to send data");
-        p_thread_info->is_success = false;
-        break;
-      }
-
-      pthread_mutex_unlock(&mutex);
     }
+
+    if (send_data(file, p_thread_info->sockfd, p_thread_info->buf) == false)
+    {
+      pthread_mutex_unlock(&mutex);
+      fprintf(stderr, "fail to send data");
+      p_thread_info->is_success = false;
+      break;
+    }
+
+    pthread_mutex_unlock(&mutex);
 	}
 
 	p_thread_info->is_complete = true;

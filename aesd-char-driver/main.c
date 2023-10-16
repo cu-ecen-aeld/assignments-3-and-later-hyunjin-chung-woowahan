@@ -55,6 +55,9 @@ static long aesd_adjust_file_offset(struct file* filp, unsigned int write_cmd, u
     retval = aesd_circular_buffer_find_offset_for_entry_index(&aesd_device.circular_buf,
         entry_index) + write_cmd_offset;
 
+    PDEBUG("write_cmd %u with offset %u: total_offset %lu",write_cmd,
+        write_cmd_offset, retval);
+
     filp->f_pos = retval;
 
 out:
@@ -94,15 +97,9 @@ ssize_t aesd_read(struct file *filp, char __user *buf, size_t count,
         return -ERESTARTSYS;
 
     do {
-        uint8_t index;
-    struct aesd_buffer_entry *entry;
         size_t offset_in_buf, copy_size;
         struct aesd_buffer_entry *pbuf =
           aesd_circular_buffer_find_entry_offset_for_fpos(&aesd_device.circular_buf, *f_pos, &offset_in_buf);
-
-        AESD_CIRCULAR_BUFFER_FOREACH(entry,&aesd_device.circular_buf,index) {
-          PDEBUG("%zu", entry->size);}
-        PDEBUG("aesd_buffer_entry=%p", pbuf);
 
         if (!pbuf)
             goto out;
@@ -178,12 +175,22 @@ out:
 
 loff_t aesd_llseek (struct file *filp, loff_t offset, int whence)
 {
+    volatile unsigned int before, after;
+    PDEBUG("llseek");
+
     loff_t retval;
 
     if (mutex_lock_interruptible(&aesd_device.lock))
         return -ERESTARTSYS;
 
+    before = filp->f_pos;
+
     retval = fixed_size_llseek(filp, offset, whence, aesd_device.circular_buf.size);
+    PDEBUG("llseek");
+
+    after = filp->f_pos;
+
+    PDEBUG("f_pos: %u -> %u", before, after);
 
     mutex_unlock(&aesd_device.lock);
 

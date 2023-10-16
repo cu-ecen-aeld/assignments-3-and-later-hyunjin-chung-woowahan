@@ -32,6 +32,9 @@ struct aesd_buffer_entry *aesd_circular_buffer_find_entry_offset_for_fpos(struct
     struct aesd_buffer_entry *entry;
     uint8_t cur_index = buffer->out_offs;
 
+    if (buffer->size == 0)
+      return NULL;
+
     do
     {
       entry = &buffer->entry[cur_index];
@@ -71,6 +74,9 @@ void aesd_circular_buffer_add_entry(struct aesd_circular_buffer *buffer, const s
         buffer->out_offs = 0;
     }
 
+    buffer->size -= buffer->entry[buffer->in_offs].size;
+    buffer->size += add_entry->size;
+
     buffer->entry[buffer->in_offs].buffptr = add_entry->buffptr;
     buffer->entry[buffer->in_offs].size = add_entry->size;
     buffer->in_offs++;
@@ -81,7 +87,26 @@ void aesd_circular_buffer_add_entry(struct aesd_circular_buffer *buffer, const s
     {
       buffer->full = true;
     }
-  }
+}
+
+long aesd_circular_buffer_find_offset_for_entry_index(struct aesd_circular_buffer *buffer, unsigned int entry_index)
+{
+    struct aesd_buffer_entry *entry;
+    uint8_t cur_index = buffer->out_offs;
+    long retval = 0;
+
+    while (cur_index != entry_index)
+    {
+      entry = &buffer->entry[cur_index];
+      retval += entry->size;
+
+      cur_index++;
+      if (cur_index == AESDCHAR_MAX_WRITE_OPERATIONS_SUPPORTED)
+        cur_index = 0;
+    }
+
+    return retval;
+}
 
 /**
 * Initializes the circular buffer described by @param buffer to an empty struct

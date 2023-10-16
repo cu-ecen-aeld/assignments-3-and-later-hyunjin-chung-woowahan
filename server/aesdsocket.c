@@ -15,6 +15,7 @@
 #include <fcntl.h>
 #include <time.h>
 #include <unistd.h>
+#include "../aesd-char-driver/aesd_ioctl.h"
 
 #define BUF_SIZE (1024 * 1024)
 
@@ -81,16 +82,8 @@ static bool send_data(int sockfd, char* buf)
 	return true;
 }
 
-static bool write_file(char* buf, int data_size)
+static bool write_file(FILE* file, char* buf, int data_size)
 {
-	FILE* file;
-
-	if ((file = fopen(FILE_PATH, "a+")) == NULL)
-	{
-		printf("fail to open write file\n");
-		return false;
-	}
-
 	for (int i = 0; i < data_size; i++)
 	{
 		if (buf[i] == '\n')
@@ -262,6 +255,7 @@ static void write_timestamp(void)
 static void* receive_send_data(void* arg)
 {
 	thread_info_t* p_thread_info = (thread_info_t*)arg;
+  char *aesdchar_ioctl_cmd = "AESDCHAR_IOCSEEKTO:";
 
 	while(true)
 	{
@@ -281,23 +275,44 @@ static void* receive_send_data(void* arg)
 
 		//printf("received\n");
 
-		pthread_mutex_lock(&mutex);
-		if (write_file(p_thread_info->buf, num_bytes_received) == false)
-		{
-			pthread_mutex_unlock(&mutex);
-			fprintf(stderr, "fail to write file");
-			p_thread_info->is_success = false;
-			break;
-		}
+    FILE* file;
 
-		if (send_data(p_thread_info->sockfd, p_thread_info->buf) == false)
-		{
-			pthread_mutex_unlock(&mutex);
-			fprintf(stderr, "fail to send data");
-			p_thread_info->is_success = false;
-			break;
-		}
-		pthread_mutex_unlock(&mutex);
+    if ((file = fopen(FILE_PATH, "a+")) == NULL)
+    {
+      printf("fail to open write file\n");
+      break;
+    }
+
+    if (0 == strncmp(p_thread_info->buf, aesdchar_ioctl_cmd, strlen(aesdchar_ioctl_cmd)))
+    {
+      struct aesd_seekto seekto;
+      char *tmp = strchr(p_thread_info->buf, ':');
+      sscanf(tmp,":%u,%u", &(seekto.write_cmd), &(seekto.write_cmd_offset));
+
+      ioctl(fileno(file), AESDCHAR_IOCSEEKTO, &seekto);
+    }
+    else
+    {
+
+      pthread_mutex_lock(&mutex);
+      if (write_file(file, p_thread_info->buf, num_bytes_received) == false)
+      {
+        pthread_mutex_unlock(&mutex);
+        fprintf(stderr, "fail to write file");
+        p_thread_info->is_success = false;
+        break;
+      }
+
+      if (send_data(p_thread_info->sockfd, p_thread_info->buf) == false)
+      {
+        pthread_mutex_unlock(&mutex);
+        fprintf(stderr, "fail to send data");
+        p_thread_info->is_success = false;
+        break;
+      }
+
+      pthread_mutex_unlock(&mutex);
+    }
 	}
 
 	p_thread_info->is_complete = true;

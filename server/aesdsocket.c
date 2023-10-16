@@ -348,8 +348,6 @@ int main(int argc, char * argv[])
 	if (init_socket(&sockfd, ipaddr))
 		return -1;
 
-	remove(FILE_PATH);
-
 	if (daemon_mode)
 		pid = fork();
 
